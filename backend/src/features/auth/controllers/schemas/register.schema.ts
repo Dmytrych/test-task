@@ -3,7 +3,7 @@ import {getApiResponseSchema} from "../../../../common/schemas/request";
 
 const registerBodySchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string(),
   name: z.string(),
 })
 

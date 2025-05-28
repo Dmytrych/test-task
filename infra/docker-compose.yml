@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres_container
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend_network
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: backend
+    restart: always
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      PORT: ${PORT}
+      AUTH_APIKEY: ${AUTH_APIKEY}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_NAME: ${DB_NAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_SSL: ${DB_SSL}
+      JWT_LIFESPAN_SECONDS: ${JWT_LIFESPAN_SECONDS}
+      GITHUB_API_HOST: ${GITHUB_API_HOST}
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '4000:4000'
+    networks:
+      - backend_network
+      - frontend_network
+
+  frontend:
+    build:
+      context: ../front-end
+      dockerfile: Dockerfile
+      args:
+        NEXT_BACKEND_BASE_URL: ${NEXT_BACKEND_BASE_URL}
+        NEXT_PUBLIC_BACKEND_BASE_URL: ${NEXT_PUBLIC_BACKEND_BASE_URL}
+        NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+        NEXTAUTH_URL: ${NEXTAUTH_URL}
+    container_name: frontend
+    restart: always
+    ports:
+      - '3000:3000'
+    networks:
+      - frontend_network
+
+volumes:
+  postgres_data:
+
+networks:
+  backend_network:
+  frontend_network:
